@@ -1,66 +1,43 @@
 import os
-import joblib
 import numpy as np
+import joblib
 from features import extract_features
+from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
-from sklearn.metrics import accuracy_score
 
-X_train = []
-y_train = []
+data_dir = "dataset/train"
 
-X_test = []
-y_test = []
+X, y = [], []
 
-dataset_path = "dataset"
+for label, cls in enumerate(["real", "spoof"]):
+    folder = os.path.join(data_dir, cls)
 
-# Load training data
-for folder, label in [("real", 0), ("spoof", 1)]:
-    train_folder = os.path.join(dataset_path, "train", folder)
-
-    for file in os.listdir(train_folder):
-        image_path = os.path.join(train_folder, file)
-
+    for file in os.listdir(folder):
+        path = os.path.join(folder, file)
         try:
-            features = extract_features(image_path)
-            X_train.append(features)
-            y_train.append(label)
+            X.append(extract_features(path))
+            y.append(label)
         except:
-            print("Skipping train:", image_path)
+            continue
 
-# Load test data
-for folder, label in [("real", 0), ("spoof", 1)]:
-    test_folder = os.path.join(dataset_path, "test", folder)
+X = np.array(X)
+y = np.array(y)
 
-    for file in os.listdir(test_folder):
-        image_path = os.path.join(test_folder, file)
-
-        try:
-            features = extract_features(image_path)
-            X_test.append(features)
-            y_test.append(label)
-        except:
-            print("Skipping test:", image_path)
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-X_test = np.array(X_test)
-y_test = np.array(y_test)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
 model = XGBClassifier(
     n_estimators=500,
-    max_depth=8,
-    learning_rate=0.03,
+    max_depth=6,
+    learning_rate=0.05,
     subsample=0.9,
-    colsample_bytree=0.9,
-    random_state=42
+    colsample_bytree=0.9
 )
+
 model.fit(X_train, y_train)
 
-preds = model.predict(X_test)
-
-accuracy = accuracy_score(y_test, preds)
-
-print("Accuracy:", accuracy)
+acc = model.score(X_test, y_test)
+print("Accuracy:", acc)
 
 joblib.dump(model, "model.pkl")

@@ -1,18 +1,31 @@
 import time
 import joblib
+import os
+import random
 from features import extract_features
 
 model = joblib.load("model.pkl")
 
-image_path = "dataset/test/real/20210327_15_09_21_000_7YC46d7RQSbz0KksQbvhM8Mbzlb2_T_4000_3000.jpg"
+# pick random image from dataset
+folders = [
+    "dataset/test/real",
+    "dataset/test/spoof"
+]
+
+all_images = []
+
+for folder in folders:
+    for f in os.listdir(folder):
+        all_images.append(os.path.join(folder, f))
+
+img = random.choice(all_images)
 
 start = time.time()
 
-features = extract_features(image_path).reshape(1, -1)
-score = model.predict_proba(features)[0][1]
+features = extract_features(img).reshape(1, -1)
+model.predict_proba(features)
 
 end = time.time()
 
-latency_ms = (end - start) * 1000
-
-print("Latency:", round(latency_ms, 2), "ms")
+print("Image used:", img)
+print("Latency:", round((end - start) * 1000, 2), "ms")
