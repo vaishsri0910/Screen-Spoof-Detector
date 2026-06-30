@@ -1,14 +1,34 @@
+import cv2
+import pickle
 import sys
-import joblib
-import numpy as np
-from features import extract_features
+from feature_extractor import extract_features
 
-model = joblib.load("model.pkl")
+THRESHOLD = 0.70
 
+# Load model
+with open("model.pkl", "rb") as f:
+    model = pickle.load(f)
+
+print("Model classes:", model.classes_)
+
+# Read image
 image_path = sys.argv[1]
+img = cv2.imread(image_path)
 
-features = extract_features(image_path).reshape(1, -1)
+if img is None:
+    print("Invalid image path")
+    exit()
 
-score = model.predict_proba(features)[0][1]
+features = extract_features(img)
 
-print(round(float(score), 2))
+# Predict probabilities
+probs = model.predict_proba([features])[0]
+prediction = model.predict([features])[0]
+
+print("Probabilities:", probs)
+
+# Dynamic label mapping
+label = "REAL" if prediction == 1 else "SPOOF"
+
+print(f"Prediction: {label}")
+print(f"Confidence: {max(probs):.2f}")

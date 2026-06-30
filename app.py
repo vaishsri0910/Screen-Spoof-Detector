@@ -1,31 +1,98 @@
 import streamlit as st
-import joblib
-import tempfile
+import cv2
+import pickle
+import numpy as np
+import av
 from PIL import Image
-from features import extract_features
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
+from feature_extractor import extract_features
 
-model = joblib.load("model.pkl")
+# Load model
+with open("model.pkl", "rb") as f:
+    model = pickle.load(f)
 
-st.title("📷 Spot the Fake Photo")
+st.title("Spot the Fake Photo")
+st.write("Anti-Spoofing Image Classifier")
 
-threshold = st.slider("Threshold", 0.0, 1.0, 0.7)
+st.write("Model Classes:", model.classes_)
 
-uploaded = st.file_uploader("Upload Image", type=["jpg","png","jpeg"])
 
-if uploaded:
-    image = Image.open(uploaded)
-    st.image(image, use_container_width=True)
+def get_label(pred):
+    """
+    Assumption:
+    1 = REAL
+    0 = SPOOF
+    If your training used opposite labels,
+    just swap here.
+    """
+    return "REAL" if pred == 1 else "SPOOF"
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-        tmp.write(uploaded.getvalue())
-        path = tmp.name
 
-    features = extract_features(path).reshape(1, -1)
-    score = model.predict_proba(features)[0][1]
+def predict_frame(img):
+    features = extract_features(img)
 
-    st.metric("Spoof Score", round(score, 2))
+    probs = model.predict_proba([features])[0]
+    pred = model.predict([features])[0]
 
-    if score > threshold:
-        st.error("Photo of Screen Detected")
-    else:
-        st.success("Real Photo")
+    label = get_label(pred)
+    confidence = max(probs)
+
+    return label, confidence
+
+
+# Upload mode
+mode = st.radio(
+    "Choose Mode",
+    ["Upload Image", "Live Camera"]
+)
+
+if mode == "Upload Image":
+    uploaded_file = st.file_uploader(
+        "Upload image",
+        type=["jpg", "jpeg", "png"]
+    )
+
+    if uploaded_file:
+        img = Image.open(uploaded_file)
+        img_np = np.array(img)
+
+        img_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+
+        st.image(img)
+
+        label, confidence = predict_frame(img_cv)
+
+        st.write(f"Prediction: {label}")
+        st.write(f"Confidence: {confidence:.2f}")
+
+        if label == "SPOOF":
+            st.error("⚠ Spoof Detected")
+        else:
+            st.success("✅ Genuine Photo")
+
+
+# Live Camera Mode
+class VideoProcessor(VideoProcessorBase):
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+
+        label, confidence = predict_frame(img)
+
+        cv2.putText(
+            img,
+            f"{label}: {confidence:.2f}",
+            (20, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2
+        )
+
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+
+if mode == "Live Camera":
+    webrtc_streamer(
+        key="camera",
+        video_processor_factory=VideoProcessor
+    )

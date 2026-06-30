@@ -1,6 +1,6 @@
 **pycache**/
 *.pyc
-*.pkl
+
 *.jpg
 *.jpeg
 *.png
