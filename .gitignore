@@ -1,0 +1,10 @@
+**pycache**/
+*.pyc
+*.pkl
+*.jpg
+*.jpeg
+*.png
+dataset/
+venv/
+.env
+.streamlit/
