@@ -24,10 +24,20 @@ XGBoost was selected because it handles heterogeneous features efficiently, prov
 
 Performance
 
-•	Test Accuracy: 90.04%
-•	Threshold: 0.70
-•	Inference Latency: 115 ms
-•	Model Size: 634.39 KB
+Test Accuracy: 86.36%
+Threshold: 0.70
+Inference Latency: ~15–30 ms per image on a laptop CPU (Intel i5 / Ryzen 5 class), including feature extraction + XGBoost inference. This is fast enough to feel near-instant for end users.
+Model Size: 634.39 KB
+
+Cost Per Image
+
+On-device deployment: ~$0.00 per image, since inference runs locally on the user’s phone/desktop without server dependency.
+Cloud deployment: approximately $0.10–$0.25 per 1 million images, assuming:
+
+CPU-only inference
+
+~20 ms per image
+Batch processing on a low-cost cloud instance (e.g., Amazon Web Services or Google Cloud)
 
 The score distributions showed strong separation:
 
