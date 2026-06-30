@@ -1,3 +1,4 @@
+Link for report:https://docs.google.com/document/d/12jppKbAYJHMIDKGhB90pBvCAMeSUepFk5wwfGdw3lwY/edit?usp=sharing
 # Screen Spoof Detector
 
 A lightweight anti-spoofing image classifier that detects whether an image is a **real photograph** or a **screen recapture (spoof)** using classical computer vision and XGBoost.
